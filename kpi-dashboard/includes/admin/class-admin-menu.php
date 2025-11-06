@@ -245,6 +245,13 @@ class KPI_Dashboard_Admin_Menu {
      */
     public function render_info_page() {
         global $wpdb;
+
+        // Handle dummy data actions
+        if (isset($_POST['kpi_dummy_data_action'])) {
+            check_admin_referer('kpi_dummy_data');
+            $this->handle_dummy_data_action();
+        }
+
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
@@ -286,8 +293,74 @@ class KPI_Dashboard_Admin_Menu {
                 <h2><?php _e('Database Tables Status', 'kpi-dashboard'); ?></h2>
                 <?php $this->show_table_status(); ?>
             </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h2><?php _e('Dummy Data Generator', 'kpi-dashboard'); ?></h2>
+                <p><?php _e('Generate test data for demonstration and testing purposes.', 'kpi-dashboard'); ?></p>
+                <p class="description">
+                    <?php _e('This will create 23 test users, positions, KPIs, and 6 months of historical data.', 'kpi-dashboard'); ?>
+                    <br>
+                    <strong style="color: #d63638;"><?php _e('Warning: This should only be used in development/testing environments!', 'kpi-dashboard'); ?></strong>
+                </p>
+
+                <form method="post" action="" style="margin-top: 15px;">
+                    <?php wp_nonce_field('kpi_dummy_data'); ?>
+                    <p>
+                        <button type="submit" name="kpi_dummy_data_action" value="generate"
+                                class="button button-primary"
+                                onclick="return confirm('<?php esc_attr_e('Are you sure you want to generate dummy data?', 'kpi-dashboard'); ?>');">
+                            <?php _e('Generate Dummy Data', 'kpi-dashboard'); ?>
+                        </button>
+
+                        <button type="submit" name="kpi_dummy_data_action" value="clear"
+                                class="button button-secondary"
+                                onclick="return confirm('<?php esc_attr_e('Are you sure you want to clear all dummy data? This will remove all generated test data!', 'kpi-dashboard'); ?>');">
+                            <?php _e('Clear Dummy Data', 'kpi-dashboard'); ?>
+                        </button>
+                    </p>
+                </form>
+            </div>
         </div>
         <?php
+    }
+
+    /**
+     * Handle dummy data generation/clearing
+     */
+    private function handle_dummy_data_action() {
+        $action = isset($_POST['kpi_dummy_data_action']) ? sanitize_text_field($_POST['kpi_dummy_data_action']) : '';
+
+        // Include dummy data generator
+        require_once KPI_DASHBOARD_PATH . 'generate-dummy-data.php';
+
+        try {
+            if ($action === 'generate') {
+                KPI_Dashboard_Dummy_Data::generate_all();
+                add_settings_error(
+                    'kpi_dummy_data',
+                    'data_generated',
+                    __('Dummy data generated successfully! You can now log in with test accounts.', 'kpi-dashboard'),
+                    'success'
+                );
+            } elseif ($action === 'clear') {
+                KPI_Dashboard_Dummy_Data::clear_all();
+                add_settings_error(
+                    'kpi_dummy_data',
+                    'data_cleared',
+                    __('Dummy data cleared successfully!', 'kpi-dashboard'),
+                    'success'
+                );
+            }
+        } catch (Exception $e) {
+            add_settings_error(
+                'kpi_dummy_data',
+                'data_error',
+                sprintf(__('Error: %s', 'kpi-dashboard'), $e->getMessage()),
+                'error'
+            );
+        }
+
+        settings_errors('kpi_dummy_data');
     }
 
     /**

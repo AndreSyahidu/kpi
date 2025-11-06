@@ -23,6 +23,7 @@ if (!defined('WPINC')) {
  * Currently plugin version.
  */
 define('KPI_DASHBOARD_VERSION', '1.0.0');
+define('KPI_DASHBOARD_PATH', plugin_dir_path(__FILE__));
 define('KPI_DASHBOARD_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('KPI_DASHBOARD_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('KPI_DASHBOARD_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -50,6 +51,13 @@ register_deactivation_hook(__FILE__, 'deactivate_kpi_dashboard');
  * The core plugin class.
  */
 require KPI_DASHBOARD_PLUGIN_DIR . 'includes/class-kpi-dashboard.php';
+
+/**
+ * Load WP-CLI commands if WP-CLI is available
+ */
+if (defined('WP_CLI') && WP_CLI) {
+    require_once KPI_DASHBOARD_PLUGIN_DIR . 'scripts/wp-cli-commands.php';
+}
 
 /**
  * Begins execution of the plugin.

@@ -103,7 +103,7 @@ class KPI_Dashboard_Router {
      * Serve production app (built files)
      */
     private function serve_prod_app($build_url) {
-        $manifest_path = KPI_DASHBOARD_PLUGIN_DIR . 'assets/dist/manifest.json';
+        $manifest_path = KPI_DASHBOARD_PLUGIN_DIR . 'assets/dist/.vite/manifest.json';
 
         // Read Vite manifest
         $manifest = [];
@@ -111,12 +111,12 @@ class KPI_Dashboard_Router {
             $manifest = json_decode(file_get_contents($manifest_path), true);
         }
 
-        $main_js = isset($manifest['src/main.tsx']['file'])
-            ? $build_url . '/' . $manifest['src/main.tsx']['file']
+        $main_js = isset($manifest['assets/src/main.tsx']['file'])
+            ? $build_url . '/' . $manifest['assets/src/main.tsx']['file']
             : $build_url . '/assets/main.js';
 
-        $main_css = isset($manifest['src/main.tsx']['css'])
-            ? $build_url . '/' . $manifest['src/main.tsx']['css'][0]
+        $main_css = isset($manifest['assets/src/main.tsx']['css'])
+            ? $build_url . '/' . $manifest['assets/src/main.tsx']['css'][0]
             : $build_url . '/assets/main.css';
         ?>
         <!DOCTYPE html>
