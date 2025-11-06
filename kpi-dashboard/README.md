@@ -70,49 +70,37 @@ Comprehensive KPI Management System for businesses with up to 100+ employees. St
 - **MySQL**: 8.0 or higher / MariaDB 10.6+
 - **Node.js**: 18+ (for development)
 
-## 🔧 Installation
+## 🔧 Quick Installation
 
-### 1. Install Plugin
+### Automated Setup
 
 ```bash
-# Upload to WordPress plugins directory
+# Clone repository
 cd wp-content/plugins/
 git clone <repository-url> kpi-dashboard
 cd kpi-dashboard
+
+# Run automated setup
+./scripts/setup.sh check      # Check requirements
+./scripts/setup.sh install    # Install dependencies
+./scripts/setup.sh build      # Build for production
 ```
 
-### 2. Install Dependencies
+### Manual Installation
 
-```bash
-# Install Node.js dependencies
-npm install
-```
-
-### 3. Build Frontend
-
-```bash
-# Development mode (with hot reload)
-npm run dev
-
-# Production build
-npm run build
-```
-
-### 4. Activate Plugin
-
-1. Go to WordPress Admin → Plugins
-2. Find "KPI Dashboard"
-3. Click "Activate"
-
-### 5. Access Dashboard
-
-Navigate to: `https://yourdomain.com/kpi`
+1. **Upload plugin** to `/wp-content/plugins/kpi-dashboard/`
+2. **Install dependencies**: `npm install --legacy-peer-deps`
+3. **Build frontend**: `npm run build`
+4. **Activate plugin** in WordPress Admin → Plugins
+5. **Access dashboard** at `https://yourdomain.com/kpi`
 
 **Default Credentials:**
 - Username: `admin`
 - Password: `admin`
 
 ⚠️ **Important**: Change the default password immediately after first login!
+
+For detailed installation instructions, see **[Installation Guide](docs/INSTALLATION.md)**
 
 ## 🏗️ Technical Architecture
 
@@ -316,9 +304,63 @@ npm run lint
 npx tsc --noEmit
 ```
 
-## 📖 API Documentation
+## 📖 Documentation
 
-Full API documentation available at `/docs/API.md`
+Complete documentation is available in the `/docs` directory:
+
+- **[Installation Guide](docs/INSTALLATION.md)** - Complete installation and setup instructions
+- **[API Documentation](docs/API.md)** - Full REST API reference with examples
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment best practices
+- **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Complete technical overview
+
+### Quick Start Scripts
+
+Use the setup script for common tasks:
+
+```bash
+# Check requirements
+./scripts/setup.sh check
+
+# Install dependencies
+./scripts/setup.sh install
+
+# Build for production
+./scripts/setup.sh build
+
+# Start development server
+./scripts/setup.sh dev
+
+# Create deployment package
+./scripts/setup.sh package
+
+# Show system info
+./scripts/setup.sh info
+```
+
+### WP-CLI Commands
+
+```bash
+# Install/reinstall database tables
+wp kpi-dashboard install
+
+# Generate test data
+wp kpi-dashboard generate-data
+
+# Clear test data
+wp kpi-dashboard clear-data
+
+# Create a new user
+wp kpi-dashboard create-user --username=johndoe --email=john@example.com
+
+# Show plugin information
+wp kpi-dashboard info
+
+# Export data to CSV
+wp kpi-dashboard export --type=users --output=users.csv
+
+# Reset plugin to initial state
+wp kpi-dashboard reset --yes
+```
 
 Example API Request:
 
