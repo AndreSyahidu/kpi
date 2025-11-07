@@ -2,6 +2,26 @@
 
 Comprehensive KPI Management System for businesses with up to 100+ employees. Standalone dashboard with full user management, department tracking, approval workflows, and advanced analytics.
 
+---
+
+## 📖 Documentation
+
+**Getting Started:**
+- **[Quick Start Guide](QUICKSTART.md)** - Get up and running in 10 minutes
+- **[Installation Guide](docs/INSTALLATION.md)** - Complete installation instructions
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment best practices
+
+**Reference:**
+- **[API Documentation](docs/API.md)** - Full REST API reference
+- **[Testing Guide](TESTING.md)** - Testing strategies and test cases
+- **[Changelog](CHANGELOG.md)** - Version history and changes
+
+**Development:**
+- **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Technical architecture
+- **[Environment Template](.env.example)** - Configuration options
+
+---
+
 ## 🚀 Features
 
 ### Core Functionality
@@ -303,15 +323,6 @@ npm run lint
 # TypeScript type checking
 npx tsc --noEmit
 ```
-
-## 📖 Documentation
-
-Complete documentation is available in the `/docs` directory:
-
-- **[Installation Guide](docs/INSTALLATION.md)** - Complete installation and setup instructions
-- **[API Documentation](docs/API.md)** - Full REST API reference with examples
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment best practices
-- **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Complete technical overview
 
 ### Quick Start Scripts
 

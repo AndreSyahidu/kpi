@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  # =============================================================================
+  # Create Release
+  # =============================================================================
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Creating release for version $VERSION"
+
+      - name: Create release package
+        run: |
+          PACKAGE_NAME="kpi-dashboard-${{ steps.version.outputs.VERSION }}"
+
+          mkdir -p /tmp/$PACKAGE_NAME
+
+          # Copy production files
+          rsync -av \
+            --exclude 'node_modules' \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.gitignore' \
+            --exclude 'assets/src' \
+            --exclude 'scripts' \
+            --exclude 'logs' \
+            --exclude '.DS_Store' \
+            --exclude '*.log' \
+            --exclude '.env*' \
+            --exclude 'package-lock.json' \
+            --exclude 'tsconfig.json' \
+            --exclude 'vite.config.ts' \
+            ./ /tmp/$PACKAGE_NAME/
+
+          # Create ZIP
+          cd /tmp
+          zip -r $PACKAGE_NAME.zip $PACKAGE_NAME -q
+
+          # Move to workspace
+          mv $PACKAGE_NAME.zip $GITHUB_WORKSPACE/
+
+          # Create checksums
+          cd $GITHUB_WORKSPACE
+          sha256sum $PACKAGE_NAME.zip > $PACKAGE_NAME.zip.sha256
+
+          echo "PACKAGE_FILE=$PACKAGE_NAME.zip" >> $GITHUB_ENV
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            # Extract changelog for this version
+            sed -n "/## \[${{ steps.version.outputs.VERSION }}\]/,/## \[/p" CHANGELOG.md | sed '$d' > release-notes.md
+
+            # If no specific version notes found, use unreleased
+            if [ ! -s release-notes.md ]; then
+              sed -n "/## Unreleased/,/## \[/p" CHANGELOG.md | sed '$d' > release-notes.md
+            fi
+          else
+            echo "Release version ${{ steps.version.outputs.VERSION }}" > release-notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          name: KPI Dashboard v${{ steps.version.outputs.VERSION }}
+          body_path: release-notes.md
+          files: |
+            ${{ env.PACKAGE_FILE }}
+            ${{ env.PACKAGE_FILE }}.sha256
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release info
+        run: |
+          echo "✓ Release created successfully"
+          echo "Version: ${{ steps.version.outputs.VERSION }}"
+          echo "Package: ${{ env.PACKAGE_FILE }}"
+          ls -lh ${{ env.PACKAGE_FILE }}

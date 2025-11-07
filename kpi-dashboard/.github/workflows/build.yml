@@ -1,0 +1,252 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop, claude/** ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  # =============================================================================
+  # Check Code Quality
+  # =============================================================================
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+  # =============================================================================
+  # Build Frontend
+  # =============================================================================
+  build-frontend:
+    name: Build Frontend Assets
+    runs-on: ubuntu-latest
+    needs: code-quality
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Check build output
+        run: |
+          if [ ! -f "assets/dist/assets/main-*.js" ]; then
+            echo "Error: Main JS file not found"
+            exit 1
+          fi
+          if [ ! -f "assets/dist/assets/main-*.css" ]; then
+            echo "Error: Main CSS file not found"
+            exit 1
+          fi
+          echo "✓ Build successful"
+
+      - name: Calculate bundle size
+        run: |
+          JS_SIZE=$(du -h assets/dist/assets/main-*.js | cut -f1)
+          CSS_SIZE=$(du -h assets/dist/assets/main-*.css | cut -f1)
+          echo "JavaScript bundle: $JS_SIZE"
+          echo "CSS bundle: $CSS_SIZE"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: assets/dist/
+          retention-days: 30
+
+  # =============================================================================
+  # Test PHP Code
+  # =============================================================================
+  test-php:
+    name: PHP Compatibility Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mysqli, mbstring, json, openssl
+          coverage: none
+
+      - name: Check PHP syntax
+        run: find . -name "*.php" -not -path "./node_modules/*" -exec php -l {} \;
+
+      - name: PHP version info
+        run: php -v
+
+  # =============================================================================
+  # Security Scan
+  # =============================================================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Check for secrets
+        run: |
+          if grep -r "password\s*=\s*['\"].*['\"]" --include="*.php" --exclude-dir=node_modules .; then
+            echo "Warning: Potential hardcoded passwords found"
+            exit 1
+          fi
+
+  # =============================================================================
+  # Create Release Package
+  # =============================================================================
+  package:
+    name: Create Release Package
+    runs-on: ubuntu-latest
+    needs: [build-frontend, test-php]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Create deployment package
+        run: |
+          PACKAGE_NAME="kpi-dashboard-$(date +%Y%m%d-%H%M%S)"
+          mkdir -p /tmp/$PACKAGE_NAME
+
+          # Copy files excluding dev dependencies
+          rsync -av \
+            --exclude 'node_modules' \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.gitignore' \
+            --exclude 'assets/src' \
+            --exclude 'scripts' \
+            --exclude 'logs' \
+            --exclude '.DS_Store' \
+            --exclude '*.log' \
+            --exclude '.env' \
+            --exclude '.env.example' \
+            ./ /tmp/$PACKAGE_NAME/
+
+          # Create ZIP
+          cd /tmp
+          zip -r $PACKAGE_NAME.zip $PACKAGE_NAME -q
+
+          # Move back
+          mv $PACKAGE_NAME.zip $GITHUB_WORKSPACE/
+
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
+
+      - name: Upload release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PACKAGE_NAME }}
+          path: ${{ env.PACKAGE_NAME }}.zip
+          retention-days: 90
+
+      - name: Package info
+        run: |
+          ls -lh ${{ env.PACKAGE_NAME }}.zip
+          echo "Package created: ${{ env.PACKAGE_NAME }}.zip"
+
+  # =============================================================================
+  # Deployment (Optional - Manual Trigger Only)
+  # =============================================================================
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: package
+    if: github.event_name == 'workflow_dispatch'
+    environment: production
+
+    steps:
+      - name: Download package
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ./build
+
+      - name: Deploy via SSH
+        if: false  # Disabled by default - configure as needed
+        run: |
+          echo "Deployment would happen here"
+          # Example SSH deployment:
+          # ssh user@server "cd /path/to/wordpress/wp-content/plugins && rm -rf kpi-dashboard"
+          # scp -r build/ user@server:/path/to/wordpress/wp-content/plugins/kpi-dashboard/
+          # ssh user@server "wp plugin activate kpi-dashboard"
+
+  # =============================================================================
+  # Notification
+  # =============================================================================
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [build-frontend, test-php, package]
+    if: always()
+
+    steps:
+      - name: Build Status
+        run: |
+          echo "Build completed"
+          echo "Frontend: ${{ needs.build-frontend.result }}"
+          echo "PHP Tests: ${{ needs.test-php.result }}"
+          echo "Package: ${{ needs.package.result }}"
