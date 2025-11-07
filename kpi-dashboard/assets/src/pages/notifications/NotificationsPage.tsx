@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  Box, Typography, Card, CardContent, Grid, Button, Paper, Chip, IconButton,
-  Alert, CircularProgress, useTheme, useMediaQuery, Avatar, Tab, Tabs, Badge,
-  List, ListItem, ListItemAvatar, ListItemText, ListItemSecondaryAction, Divider,
+  Box, Typography, Card, CardContent, Button, Paper, Chip, IconButton,
+  CircularProgress, useTheme, useMediaQuery, Avatar, Tab, Tabs, Badge,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon, CheckCircle as CheckIcon,
@@ -16,18 +15,24 @@ import notificationsService, { Notification } from '@/services/notifications.ser
 
 dayjs.extend(relativeTime);
 
-const typeIcons = {
+const typeIcons: Record<string, any> = {
   info: InfoIcon,
   success: CheckIcon,
   warning: WarningIcon,
   error: ErrorIcon,
+  reminder: InfoIcon,
+  approval: CheckIcon,
+  alert: WarningIcon,
 };
 
-const typeColors = {
+const typeColors: Record<string, string> = {
   info: '#1976D2',
   success: '#2E7D32',
   warning: '#ED6C02',
   error: '#D32F2F',
+  reminder: '#1976D2',
+  approval: '#2E7D32',
+  alert: '#ED6C02',
 };
 
 interface TabPanelProps {
@@ -113,7 +118,6 @@ export default function NotificationsPage() {
   };
 
   const unreadNotifications = notifications.filter((n) => !n.read_at);
-  const readNotifications = notifications.filter((n) => n.read_at);
 
   const renderNotificationItem = (notification: Notification) => {
     const IconComponent = typeIcons[notification.type];

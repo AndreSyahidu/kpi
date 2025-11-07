@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Box, Typography, Card, CardContent, Grid, TextField, Button, Paper,
+  Box, Typography, Card, CardContent, Grid, TextField, Button,
   CircularProgress, MenuItem, useTheme, useMediaQuery, Avatar, Alert,
   List, ListItem, ListItemAvatar, ListItemText, ListItemSecondaryAction,
   IconButton, Divider,
@@ -348,8 +348,8 @@ export default function ReportsPage() {
                       edge="end"
                       onClick={() => {
                         setReportType('executive');
-                        setPeriodStart(dayjs().subtract(1, 'quarter').startOf('quarter'));
-                        setPeriodEnd(dayjs().subtract(1, 'quarter').endOf('quarter'));
+                        setPeriodStart(dayjs().subtract(3, 'month').startOf('month'));
+                        setPeriodEnd(dayjs().subtract(1, 'month').endOf('month'));
                         setFormat('pdf');
                       }}
                     >

@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, CardContent, Grid, TextField, Button, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton,
-  Dialog, DialogTitle, DialogContent, DialogActions, Alert, CircularProgress,
+  Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress,
   MenuItem, useTheme, useMediaQuery, Fab, Avatar, Tooltip, InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Assessment as AssessmentIcon,
-  CloudUpload as UploadIcon, Download as DownloadIcon, Search as SearchIcon,
+  Search as SearchIcon,
   TrendingUp as TrendingUpIcon, CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
@@ -17,7 +17,6 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
 import dataService, { KPIData, CreateKPIDataInput } from '@/services/data.service';
 import kpisService, { KPI } from '@/services/kpis.service';
-import { useAuthStore } from '@/store/auth.store';
 
 const statusColors = {
   draft: '#757575',
@@ -31,8 +30,6 @@ export default function DataEntryPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  const user = useAuthStore((state) => state.user);
-
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [dataEntries, setDataEntries] = useState<KPIData[]>([]);
   const [filteredEntries, setFilteredEntries] = useState<KPIData[]>([]);

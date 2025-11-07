@@ -3,7 +3,7 @@ import {
   Box, Typography, Card, CardContent, Grid, TextField, Button, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, Alert, CircularProgress,
-  MenuItem, useTheme, useMediaQuery, Avatar, Tooltip, Tab, Tabs, Badge,
+ useTheme, useMediaQuery, Avatar, Tooltip, Tab, Tabs, Badge,
 } from '@mui/material';
 import {
   CheckCircle as ApproveIcon, Cancel as RejectIcon, Pending as PendingIcon,
@@ -13,7 +13,6 @@ import {
 import { useSnackbar } from 'notistack';
 import dayjs from 'dayjs';
 import approvalsService, { ApprovalItem } from '@/services/approvals.service';
-import { useAuthStore } from '@/store/auth.store';
 
 const statusColors = {
   submitted: '#1976D2',
@@ -38,8 +37,6 @@ export default function ApprovalsPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  const user = useAuthStore((state) => state.user);
-
   const [activeTab, setActiveTab] = useState(0);
   const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
   const [loading, setLoading] = useState(true);

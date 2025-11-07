@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, CardContent, Grid, TextField, Button, Avatar, Divider,
   Alert, CircularProgress, Paper, IconButton, InputAdornment, Tabs, Tab,
-  useTheme, useMediaQuery, Switch, FormControlLabel, List, ListItem, ListItemText,
+  useTheme, useMediaQuery, Switch, List, ListItem, ListItemText,
   ListItemIcon, Chip,
 } from '@mui/material';
 import {
@@ -210,7 +210,7 @@ export default function SettingsPage() {
               sx={{
                 width: isMobile ? 64 : 80,
                 height: isMobile ? 64 : 80,
-                bgcolor: user?.role ? roleColors[user.role] : '#757575',
+                bgcolor: user?.role ? (roleColors as any)[user.role] : '#757575',
                 fontSize: isMobile ? 24 : 32,
                 fontWeight: 700,
               }}
@@ -227,7 +227,7 @@ export default function SettingsPage() {
                   size="small"
                   sx={{
                     bgcolor: user?.role ? `${roleColors[user.role]}20` : '#75757520',
-                    color: user?.role ? roleColors[user.role] : '#757575',
+                    color: user?.role ? (roleColors as any)[user.role] : '#757575',
                     fontWeight: 600,
                   }}
                 />
