@@ -46,6 +46,10 @@ class NotificationsService {
   async updatePreferences(preferences: any): Promise<void> {
     await apiService.put(`${this.baseUrl}/preferences`, preferences);
   }
+
+  async delete(id: number): Promise<void> {
+    await apiService.delete(`${this.baseUrl}/${id}`);
+  }
 }
 
 export const notificationsService = new NotificationsService();
