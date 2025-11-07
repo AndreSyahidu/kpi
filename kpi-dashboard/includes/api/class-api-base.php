@@ -140,8 +140,9 @@ class KPI_Dashboard_API_Base extends WP_REST_Controller {
 
     /**
      * Get common query params
+     * Must be public to override WP_REST_Controller
      */
-    protected function get_collection_params() {
+    public function get_collection_params() {
         return [
             'page' => [
                 'description' => __('Current page', 'kpi-dashboard'),
