@@ -104,6 +104,9 @@ class KPI_Dashboard_Router {
      * Serve production app (built files)
      */
     private function serve_prod_app($build_url) {
+        // Set permissive CSP headers for KPI Dashboard
+        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;");
+
         $manifest_path = KPI_DASHBOARD_PLUGIN_DIR . 'assets/dist/.vite/manifest.json';
 
         // Read Vite manifest
