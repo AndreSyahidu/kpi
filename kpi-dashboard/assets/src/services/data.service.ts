@@ -14,10 +14,11 @@ export interface KPIData {
   period_end: string;
   value: number;
   unit: string | null;
-  status: 'draft' | 'pending' | 'approved' | 'rejected';
+  status: 'draft' | 'submitted' | 'approved' | 'rejected';
   notes: string | null;
   attachments: string | null;
   submitted_by: number;
+  submitted_by_name?: string;
   submitted_at: string;
   reviewed_by: number | null;
   reviewed_at: string | null;
@@ -28,22 +29,25 @@ export interface KPIData {
 
 export interface CreateKPIDataInput {
   kpi_id: number;
-  department_id: number;
+  department_id?: number;
   position_id?: number;
   user_id?: number;
   period_start: string;
   period_end: string;
   value: number;
   unit?: string;
-  status?: 'draft' | 'pending';
+  status?: 'draft' | 'submitted';
   notes?: string;
 }
 
 export interface UpdateKPIDataInput {
   value?: number;
-  status?: 'draft' | 'pending' | 'approved' | 'rejected';
+  status?: 'draft' | 'submitted' | 'approved' | 'rejected';
   notes?: string;
   review_notes?: string;
+  period_start?: string;
+  period_end?: string;
+  kpi_id?: number;
 }
 
 class DataService {
@@ -75,6 +79,11 @@ class DataService {
 
   async bulkCreate(data: CreateKPIDataInput[]): Promise<KPIData[]> {
     const response = await apiService.post<{ success: boolean; data: KPIData[] }>(`${this.baseUrl}/bulk`, { entries: data });
+    return response.data;
+  }
+
+  async submitForApproval(id: number): Promise<KPIData> {
+    const response = await apiService.post<{ success: boolean; data: KPIData }>(`${this.baseUrl}/${id}/submit`, {});
     return response.data;
   }
 }
