@@ -1,233 +1,234 @@
 <?php
 /**
- * Debug REST API - KPI Dashboard
- * Check if REST API endpoints are working
+ * Debug API Script
+ * Upload ke: /wp-content/plugins/kpi-dashboard/debug-api.php
+ * Buka: https://www.mbdcorp.id/wp-content/plugins/kpi-dashboard/debug-api.php
  */
 
 // Load WordPress
 require_once('../../../wp-load.php');
 
 header('Content-Type: text/html; charset=utf-8');
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KPI Dashboard - API Debug</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+        .section { background: white; padding: 20px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #2196F3; }
+        .success { border-left-color: #4CAF50; }
+        .error { border-left-color: #f44336; }
+        .warning { border-left-color: #FF9800; }
+        h2 { margin-top: 0; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        .status { display: inline-block; padding: 5px 10px; border-radius: 3px; font-weight: bold; }
+        .status.ok { background: #4CAF50; color: white; }
+        .status.fail { background: #f44336; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🔍 KPI Dashboard - API Diagnostic</h1>
 
-echo "<h1>🔍 KPI Dashboard - REST API Debug</h1>";
-echo "<style>
-    body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
-    h1 { color: #4fc3f7; }
-    h2 { color: #81c784; margin-top: 30px; }
-    .success { color: #81c784; }
-    .error { color: #e57373; }
-    .warning { color: #ffb74d; }
-    pre { background: #2d2d2d; padding: 15px; border-radius: 5px; overflow-x: auto; }
-    .box { background: #2d2d2d; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 3px solid #4fc3f7; }
-</style>";
-
-// 1. Check if REST API is enabled
-echo "<h2>1. WordPress REST API Status</h2>";
-echo "<div class='box'>";
-$rest_enabled = function_exists('rest_get_server');
-if ($rest_enabled) {
-    echo "<span class='success'>✓ REST API is enabled</span><br>";
-    echo "REST URL: <code>" . rest_url() . "</code>";
-} else {
-    echo "<span class='error'>✗ REST API is NOT enabled</span>";
-}
-echo "</div>";
-
-// 2. Check KPI REST API namespace
-echo "<h2>2. KPI REST API Namespace</h2>";
-echo "<div class='box'>";
-$kpi_rest_url = rest_url('kpi/v1');
-echo "KPI REST URL: <code>" . $kpi_rest_url . "</code><br><br>";
-
-// Try to get REST routes
-$wp_rest_server = rest_get_server();
-$routes = $wp_rest_server->get_routes();
-$kpi_routes = [];
-
-foreach ($routes as $route => $handlers) {
-    if (strpos($route, '/kpi/v1') === 0) {
-        $kpi_routes[] = $route;
-    }
-}
-
-if (!empty($kpi_routes)) {
-    echo "<span class='success'>✓ Found " . count($kpi_routes) . " KPI API routes</span><br>";
-    echo "<pre>";
-    foreach ($kpi_routes as $route) {
-        echo $route . "\n";
-    }
-    echo "</pre>";
-} else {
-    echo "<span class='error'>✗ No KPI API routes found!</span><br>";
-    echo "<span class='warning'>⚠ Plugin may not be properly initialized</span>";
-}
-echo "</div>";
-
-// 3. Test Auth Endpoint
-echo "<h2>3. Test Authentication Endpoint</h2>";
-echo "<div class='box'>";
-
-$auth_url = rest_url('kpi/v1/auth/login');
-echo "Testing: <code>POST {$auth_url}</code><br><br>";
-
-$response = wp_remote_post($auth_url, [
-    'headers' => ['Content-Type' => 'application/json'],
-    'body' => json_encode([
-        'username' => 'admin',
-        'password' => 'admin'
-    ])
-]);
-
-if (is_wp_error($response)) {
-    echo "<span class='error'>✗ Request failed: " . $response->get_error_message() . "</span>";
-} else {
-    $status_code = wp_remote_retrieve_response_code($response);
-    $body = wp_remote_retrieve_body($response);
-
-    echo "Status Code: <code>" . $status_code . "</code><br>";
-
-    if ($status_code == 200) {
-        echo "<span class='success'>✓ Auth endpoint is working!</span><br>";
+    <?php
+    // 1. Check Plugin Active
+    echo '<div class="section">';
+    echo '<h2>1. Plugin Status</h2>';
+    $plugin_active = is_plugin_active('kpi-dashboard/kpi-dashboard.php');
+    if ($plugin_active) {
+        echo '<span class="status ok">✓ ACTIVE</span>';
     } else {
-        echo "<span class='error'>✗ Auth endpoint returned error</span><br>";
+        echo '<span class="status fail">✗ INACTIVE</span>';
+        echo '<p>Plugin harus diaktifkan dulu!</p>';
     }
+    echo '</div>';
 
-    echo "<br>Response:<br><pre>";
-    $json = json_decode($body, true);
-    echo json_encode($json, JSON_PRETTY_PRINT);
-    echo "</pre>";
-}
-echo "</div>";
+    // 2. Check Database Tables
+    echo '<div class="section">';
+    echo '<h2>2. Database Tables</h2>';
+    global $wpdb;
+    $tables = [
+        'kpi_users',
+        'kpi_departments',
+        'kpi_positions',
+        'kpi_definitions',
+        'kpi_data',
+        'kpi_notifications',
+        'kpi_settings'
+    ];
+    
+    $all_exist = true;
+    foreach ($tables as $table) {
+        $full_table = $wpdb->prefix . $table;
+        $exists = $wpdb->get_var("SHOW TABLES LIKE '$full_table'") === $full_table;
+        
+        if ($exists) {
+            $count = $wpdb->get_var("SELECT COUNT(*) FROM $full_table");
+            echo "<div>✓ $table <small>($count rows)</small></div>";
+        } else {
+            echo "<div style='color: red;'>✗ $table <strong>NOT FOUND</strong></div>";
+            $all_exist = false;
+        }
+    }
+    
+    if (!$all_exist) {
+        echo '<p style="color: red;"><strong>Database tables belum dibuat! Deactivate dan Activate ulang plugin.</strong></p>';
+    }
+    echo '</div>';
 
-// 4. Check Database Tables
-echo "<h2>4. Database Tables</h2>";
-echo "<div class='box'>";
-global $wpdb;
-
-$tables = [
-    'kpi_categories' => $wpdb->prefix . 'kpi_categories',
-    'kpi_indicators' => $wpdb->prefix . 'kpi_indicators',
-    'kpi_indicator_data' => $wpdb->prefix . 'kpi_indicator_data',
-    'kpi_settings' => $wpdb->prefix . 'kpi_settings',
-    'kpi_audit_logs' => $wpdb->prefix . 'kpi_audit_logs',
-];
-
-$all_exist = true;
-foreach ($tables as $name => $table) {
-    $exists = $wpdb->get_var("SHOW TABLES LIKE '$table'") == $table;
-
-    if ($exists) {
-        $count = $wpdb->get_var("SELECT COUNT(*) FROM $table");
-        echo "<span class='success'>✓ $table</span> - $count rows<br>";
+    // 3. Check Frontend Build
+    echo '<div class="section">';
+    echo '<h2>3. Frontend Build Files</h2>';
+    $plugin_dir = WP_PLUGIN_DIR . '/kpi-dashboard/';
+    $manifest = $plugin_dir . 'assets/dist/.vite/manifest.json';
+    $main_js = $plugin_dir . 'assets/dist/assets/main-Cn-9-PkT.js';
+    
+    if (file_exists($manifest)) {
+        echo '<div>✓ manifest.json EXISTS</div>';
+        $manifest_content = json_decode(file_get_contents($manifest), true);
+        if ($manifest_content) {
+            echo '<pre>' . json_encode($manifest_content, JSON_PRETTY_PRINT) . '</pre>';
+        }
     } else {
-        echo "<span class='error'>✗ $table - NOT FOUND</span><br>";
-        $all_exist = false;
+        echo '<div style="color: red;">✗ manifest.json NOT FOUND</div>';
+        echo '<p>File harus ada di: ' . $manifest . '</p>';
     }
-}
-
-if (!$all_exist) {
-    echo "<br><span class='warning'>⚠ Some tables are missing! Try deactivating and reactivating the plugin.</span>";
-}
-echo "</div>";
-
-// 5. Check Plugin Classes
-echo "<h2>5. Plugin Classes Loaded</h2>";
-echo "<div class='box'>";
-
-$classes = [
-    'KPI_Dashboard' => 'Main plugin class',
-    'KPI_Dashboard_Router' => 'Router class',
-    'KPI_Dashboard_API_Auth' => 'Auth API',
-    'KPI_Dashboard_API_Categories' => 'Categories API',
-    'KPI_Dashboard_API_Indicators' => 'Indicators API',
-];
-
-foreach ($classes as $class => $desc) {
-    if (class_exists($class)) {
-        echo "<span class='success'>✓ $class</span> - $desc<br>";
+    
+    if (file_exists($main_js)) {
+        $size = filesize($main_js);
+        echo '<div>✓ main-Cn-9-PkT.js EXISTS (' . number_format($size / 1024, 2) . ' KB)</div>';
     } else {
-        echo "<span class='error'>✗ $class</span> - $desc - NOT LOADED<br>";
+        echo '<div style="color: red;">✗ main-Cn-9-PkT.js NOT FOUND</div>';
+        
+        // Check if old build exists
+        $dist_dir = $plugin_dir . 'assets/dist/assets/';
+        if (is_dir($dist_dir)) {
+            $files = scandir($dist_dir);
+            echo '<p>Files in dist/assets/:</p><pre>';
+            print_r(array_diff($files, ['.', '..']));
+            echo '</pre>';
+        }
     }
-}
-echo "</div>";
+    echo '</div>';
 
-// 6. Test Direct API Call
-echo "<h2>6. Test Categories Endpoint (requires auth)</h2>";
-echo "<div class='box'>";
-echo "This will show if the API can return data after authentication.<br><br>";
-
-// Get current user token (if logged in)
-$current_user = wp_get_current_user();
-if ($current_user->ID > 0) {
-    echo "Current User: <code>" . $current_user->user_login . "</code> (ID: {$current_user->ID})<br>";
-
-    // Try to get categories
-    $categories_url = rest_url('kpi/v1/categories');
-    echo "Testing: <code>GET {$categories_url}</code><br><br>";
-
-    $cat_response = wp_remote_get($categories_url, [
-        'headers' => [
-            'X-WP-Nonce' => wp_create_nonce('wp_rest')
-        ],
-        'cookies' => $_COOKIE
-    ]);
-
-    if (!is_wp_error($cat_response)) {
-        $cat_status = wp_remote_retrieve_response_code($cat_response);
-        $cat_body = wp_remote_retrieve_body($cat_response);
-
-        echo "Status Code: <code>$cat_status</code><br>";
-        echo "Response:<br><pre>";
-        $cat_json = json_decode($cat_body, true);
-        echo json_encode($cat_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        echo "</pre>";
+    // 4. Check API Endpoints
+    echo '<div class="section">';
+    echo '<h2>4. REST API Endpoints</h2>';
+    $endpoints = [
+        '/kpi/v1/auth/login',
+        '/kpi/v1/users',
+        '/kpi/v1/departments',
+        '/kpi/v1/kpis',
+        '/kpi/v1/data',
+        '/kpi/v1/approvals',
+        '/kpi/v1/reports',
+        '/kpi/v1/notifications',
+        '/kpi/v1/settings',
+        '/kpi/v1/analytics'
+    ];
+    
+    $rest_url = rest_url();
+    echo '<p>REST API Base URL: ' . $rest_url . '</p>';
+    
+    foreach ($endpoints as $endpoint) {
+        $url = $rest_url . $endpoint;
+        echo '<div>' . $endpoint . '</div>';
     }
-} else {
-    echo "<span class='warning'>⚠ Not logged in to WordPress. Login to test authenticated endpoints.</span>";
-}
-echo "</div>";
+    echo '</div>';
 
-// 7. JavaScript Config Check
-echo "<h2>7. Frontend JavaScript Config</h2>";
-echo "<div class='box'>";
-echo "The frontend should receive this config:<br><br>";
-echo "<pre>";
-$config = [
-    'apiUrl' => rest_url('kpi/v1'),
-    'siteUrl' => get_site_url(),
-    'baseUrl' => get_site_url() . '/kpi',
-    'nonce' => wp_create_nonce('wp_rest'),
-    'version' => defined('KPI_DASHBOARD_VERSION') ? KPI_DASHBOARD_VERSION : 'unknown',
-    'companyName' => get_option('blogname', 'MBD Corp'),
-];
-echo json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-echo "</pre>";
-echo "</div>";
+    // 5. Check Current User
+    echo '<div class="section">';
+    echo '<h2>5. Current User</h2>';
+    $current_user = wp_get_current_user();
+    if ($current_user->ID) {
+        echo '<div>✓ Logged in as: ' . $current_user->user_login . ' (ID: ' . $current_user->ID . ')</div>';
+        echo '<div>Roles: ' . implode(', ', $current_user->roles) . '</div>';
+    } else {
+        echo '<div style="color: orange;">⚠ Not logged in</div>';
+        echo '<p>Login dulu ke WordPress untuk test API!</p>';
+    }
+    echo '</div>';
 
-// 8. Browser Console Test
-echo "<h2>8. Browser Console Test</h2>";
-echo "<div class='box'>";
-echo "Copy and paste this into your browser console when on /kpi page:<br><br>";
-echo "<pre style='background: #1e1e1e; color: #4fc3f7;'>";
-echo "// Check if config is loaded\n";
-echo "console.log('KPI Config:', window.KPI_DASHBOARD_CONFIG);\n\n";
-echo "// Test API call\n";
-echo "fetch('" . rest_url('kpi/v1/auth/status') . "', {\n";
-echo "  headers: {\n";
-echo "    'X-WP-Nonce': window.KPI_DASHBOARD_CONFIG.nonce\n";
-echo "  }\n";
-echo "})\n";
-echo ".then(r => r.json())\n";
-echo ".then(data => console.log('API Response:', data))\n";
-echo ".catch(err => console.error('API Error:', err));";
-echo "</pre>";
-echo "</div>";
+    // 6. Test Sample API Call
+    echo '<div class="section">';
+    echo '<h2>6. Test API Call - Departments</h2>';
+    
+    if ($current_user->ID) {
+        $request = new WP_REST_Request('GET', '/kpi/v1/departments');
+        $response = rest_do_request($request);
+        
+        if ($response->is_error()) {
+            echo '<div style="color: red;">✗ API Error</div>';
+            echo '<pre>' . print_r($response->get_error_message(), true) . '</pre>';
+        } else {
+            echo '<div style="color: green;">✓ API Working</div>';
+            echo '<p>Response:</p>';
+            echo '<pre>' . json_encode($response->get_data(), JSON_PRETTY_PRINT) . '</pre>';
+        }
+    } else {
+        echo '<p style="color: orange;">Tidak bisa test API karena belum login</p>';
+    }
+    echo '</div>';
 
-echo "<hr style='margin: 40px 0; border-color: #4fc3f7;'>";
-echo "<p><strong>Next Steps:</strong></p>";
-echo "<ol>";
-echo "<li>If API routes are missing → Deactivate and reactivate plugin</li>";
-echo "<li>If database tables are missing → Reactivate plugin</li>";
-echo "<li>If API returns errors → Check browser console on /kpi page</li>";
-echo "<li>Run the browser console test above to see actual frontend errors</li>";
-echo "</ol>";
+    // 7. Check Page Files
+    echo '<div class="section">';
+    echo '<h2>7. React Page Files</h2>';
+    $page_files = [
+        'assets/src/pages/users/UsersPage.tsx',
+        'assets/src/pages/departments/DepartmentsPage.tsx',
+        'assets/src/pages/kpis/KPIsPage.tsx',
+        'assets/src/pages/data-entry/DataEntryPage.tsx',
+        'assets/src/pages/approvals/ApprovalsPage.tsx',
+        'assets/src/pages/reports/ReportsPage.tsx',
+        'assets/src/pages/analytics/AnalyticsPage.tsx',
+        'assets/src/pages/notifications/NotificationsPage.tsx',
+        'assets/src/pages/settings/SettingsPage.tsx',
+    ];
+    
+    foreach ($page_files as $file) {
+        $full_path = $plugin_dir . $file;
+        if (file_exists($full_path)) {
+            $lines = count(file($full_path));
+            
+            // Check if it's a placeholder
+            $content = file_get_contents($full_path);
+            $is_placeholder = strpos($content, 'Backend ready') !== false;
+            
+            if ($is_placeholder) {
+                echo '<div style="color: red;">✗ ' . basename(dirname($file)) . ' - PLACEHOLDER (' . $lines . ' lines)</div>';
+            } else {
+                echo '<div style="color: green;">✓ ' . basename(dirname($file)) . ' - IMPLEMENTED (' . $lines . ' lines)</div>';
+            }
+        } else {
+            echo '<div style="color: red;">✗ ' . basename(dirname($file)) . ' - NOT FOUND</div>';
+        }
+    }
+    echo '</div>';
+
+    // 8. Instructions
+    echo '<div class="section warning">';
+    echo '<h2>📋 Next Steps</h2>';
+    echo '<ol>';
+    echo '<li>Pastikan semua file di atas ✓ (hijau)</li>';
+    echo '<li>Jika ada yang merah, upload file yang kurang</li>';
+    echo '<li>Jika database tables tidak ada: Deactivate & Activate plugin</li>';
+    echo '<li>Jika build files tidak ada: Upload folder assets/dist/</li>';
+    echo '<li>Jika page files masih placeholder: Upload folder assets/src/pages/</li>';
+    echo '<li>Clear cache WordPress</li>';
+    echo '<li>Hard reload browser (Ctrl+F5)</li>';
+    echo '</ol>';
+    echo '</div>';
+    ?>
+
+    <div class="section">
+        <h2>🔗 Useful Links</h2>
+        <ul>
+            <li><a href="<?php echo admin_url('plugins.php'); ?>">WordPress Plugins</a></li>
+            <li><a href="<?php echo admin_url('options-permalink.php'); ?>">Permalinks Settings</a></li>
+            <li><a href="<?php echo site_url('/kpi'); ?>">KPI Dashboard</a></li>
+            <li><a href="<?php echo rest_url('kpi/v1/departments'); ?>">Test API: Departments</a></li>
+        </ul>
+    </div>
+
+</body>
+</html>
