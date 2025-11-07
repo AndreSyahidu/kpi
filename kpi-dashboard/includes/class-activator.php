@@ -8,49 +8,128 @@ class KPI_Dashboard_Activator {
      * Plugin activation logic
      */
     public static function activate() {
-        // Check PHP version
-        if (version_compare(PHP_VERSION, '8.1', '<')) {
+        try {
+            // Check PHP version
+            if (version_compare(PHP_VERSION, '8.1', '<')) {
+                throw new Exception('KPI Dashboard requires PHP 8.1 or higher. Current version: ' . PHP_VERSION);
+            }
+
+            // Check WordPress version
+            if (version_compare(get_bloginfo('version'), '6.4', '<')) {
+                throw new Exception('KPI Dashboard requires WordPress 6.4 or higher. Current version: ' . get_bloginfo('version'));
+            }
+
+            // Check required PHP extensions
+            $required_extensions = ['mysqli', 'json', 'mbstring'];
+            $missing = [];
+            foreach ($required_extensions as $ext) {
+                if (!extension_loaded($ext)) {
+                    $missing[] = $ext;
+                }
+            }
+            if (!empty($missing)) {
+                throw new Exception('Missing required PHP extensions: ' . implode(', ', $missing));
+            }
+
+            // Create database tables
+            self::create_database_tables();
+
+            // Create upload directories
+            self::create_upload_directories();
+
+            // Set default options
+            self::set_default_options();
+
+            // Flush rewrite rules for custom routing
+            flush_rewrite_rules();
+
+            // Set activation timestamp
+            update_option('kpi_dashboard_activated', time());
+            update_option('kpi_dashboard_version', KPI_DASHBOARD_VERSION);
+
+        } catch (Exception $e) {
+            // Log error
+            error_log('KPI Dashboard Activation Error: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+
+            // Deactivate plugin
             deactivate_plugins(KPI_DASHBOARD_PLUGIN_BASENAME);
+
+            // Show user-friendly error
+            $error_html = '
+                <div style="max-width: 800px; margin: 50px auto; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">
+                    <h1 style="color: #d63638;">❌ KPI Dashboard Activation Failed</h1>
+
+                    <div style="background: #fff; border-left: 4px solid #d63638; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin-top: 0;">Error Details:</h3>
+                        <p style="font-family: monospace; background: #f6f7f7; padding: 15px; border-radius: 3px;">' . esc_html($e->getMessage()) . '</p>
+                    </div>
+
+                    <div style="background: #fff; border-left: 4px solid #72aee6; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin-top: 0;">🔍 How to Debug:</h3>
+                        <ol>
+                            <li>Run the debug script: <code style="background: #f6f7f7; padding: 2px 6px;">http://yoursite.com/wp-content/plugins/kpi-dashboard/debug-activation.php</code></li>
+                            <li>Check WordPress debug log: <code style="background: #f6f7f7; padding: 2px 6px;">wp-content/debug.log</code></li>
+                            <li>See full troubleshooting guide: <code style="background: #f6f7f7; padding: 2px 6px;">FIX_ACTIVATION_ERROR.md</code></li>
+                        </ol>
+                    </div>
+
+                    <div style="background: #fff; border-left: 4px solid #00a32a; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin-top: 0;">✅ Quick Checklist:</h3>
+                        <ul>
+                            <li>PHP Version ≥ 8.1: <strong>' . PHP_VERSION . '</strong></li>
+                            <li>WordPress Version ≥ 6.4: <strong>' . get_bloginfo('version') . '</strong></li>
+                            <li>MySQL/MariaDB running and accessible</li>
+                            <li>Required PHP extensions installed (mysqli, json, mbstring)</li>
+                        </ul>
+                    </div>
+
+                    <p><a href="' . admin_url('plugins.php') . '" class="button button-primary">« Back to Plugins</a></p>
+                </div>
+            ';
+
             wp_die(
-                __('KPI Dashboard requires PHP 8.1 or higher. Please upgrade PHP.', 'kpi-dashboard'),
-                __('Plugin Activation Error', 'kpi-dashboard'),
-                ['back_link' => true]
+                $error_html,
+                'KPI Dashboard Activation Error',
+                ['back_link' => false]
             );
         }
-
-        // Check WordPress version
-        if (version_compare(get_bloginfo('version'), '6.4', '<')) {
-            deactivate_plugins(KPI_DASHBOARD_PLUGIN_BASENAME);
-            wp_die(
-                __('KPI Dashboard requires WordPress 6.4 or higher. Please upgrade WordPress.', 'kpi-dashboard'),
-                __('Plugin Activation Error', 'kpi-dashboard'),
-                ['back_link' => true]
-            );
-        }
-
-        // Create database tables
-        self::create_database_tables();
-
-        // Create upload directories
-        self::create_upload_directories();
-
-        // Set default options
-        self::set_default_options();
-
-        // Flush rewrite rules for custom routing
-        flush_rewrite_rules();
-
-        // Set activation timestamp
-        update_option('kpi_dashboard_activated', time());
-        update_option('kpi_dashboard_version', KPI_DASHBOARD_VERSION);
     }
 
     /**
      * Create custom database tables
      */
     private static function create_database_tables() {
-        require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/database/class-db-schema.php';
+        $schema_file = KPI_DASHBOARD_PLUGIN_DIR . 'includes/database/class-db-schema.php';
+
+        if (!file_exists($schema_file)) {
+            throw new Exception('Database schema file not found: ' . $schema_file);
+        }
+
+        require_once $schema_file;
+
+        if (!class_exists('KPI_Dashboard_DB_Schema')) {
+            throw new Exception('Database schema class not found');
+        }
+
+        // Test database connection
+        global $wpdb;
+        if ($wpdb->last_error) {
+            throw new Exception('Database connection error: ' . $wpdb->last_error);
+        }
+
+        // Create tables
         KPI_Dashboard_DB_Schema::create_tables();
+
+        // Verify tables were created
+        $required_tables = ['kpi_users', 'kpi_departments', 'kpi_positions'];
+        foreach ($required_tables as $table) {
+            $full_table = $wpdb->prefix . $table;
+            $exists = $wpdb->get_var("SHOW TABLES LIKE '$full_table'");
+            if (!$exists) {
+                throw new Exception('Failed to create table: ' . $table);
+            }
+        }
     }
 
     /**
