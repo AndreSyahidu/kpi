@@ -54,15 +54,16 @@ class KPI_Dashboard_Router {
         $build_dir = KPI_DASHBOARD_PLUGIN_DIR . 'assets/dist';
         $build_url = KPI_DASHBOARD_PLUGIN_URL . 'assets/dist';
 
-        // Check if build exists (development vs production)
-        $is_dev = !file_exists($build_dir . '/index.html');
+        // Check if build exists (check for manifest.json instead of index.html)
+        $manifest_file = $build_dir . '/.vite/manifest.json';
+        $is_prod = file_exists($manifest_file);
 
-        if ($is_dev) {
-            // Development mode - point to Vite dev server
-            $this->serve_dev_app();
-        } else {
+        if ($is_prod) {
             // Production mode - serve built files
             $this->serve_prod_app($build_url);
+        } else {
+            // Development mode - point to Vite dev server
+            $this->serve_dev_app();
         }
     }
 
@@ -127,7 +128,7 @@ class KPI_Dashboard_Router {
             <meta name="theme-color" content="#1565C0">
             <title>KPI Dashboard - MBD Corp</title>
             <link rel="icon" href="https://www.mbdcorp.id/wp-content/uploads/2022/08/logo-favicon-mbd-corp-150x150-1.webp">
-            <?php if (file_exists($manifest_path) && isset($manifest['src/main.tsx']['css'])): ?>
+            <?php if (file_exists($manifest_path) && isset($manifest['assets/src/main.tsx']['css'])): ?>
             <link rel="stylesheet" href="<?php echo esc_url($main_css); ?>">
             <?php endif; ?>
             <script>
