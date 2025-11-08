@@ -33,7 +33,30 @@ if (!$wp_loaded) {
     die('Error: Could not find WordPress.');
 }
 
-$plugin_dir = $_SERVER['DOCUMENT_ROOT'] . '/wp-content/plugins/kpi-dashboard/';
+// Try multiple possible plugin directory locations
+$possible_paths = [
+    $_SERVER['DOCUMENT_ROOT'] . '/wp-content/plugins/kpi-dashboard/',
+    ABSPATH . 'wp-content/plugins/kpi-dashboard/',
+    dirname(__FILE__) . '/kpi-dashboard/',
+    dirname(__FILE__) . '/wp-content/plugins/kpi-dashboard/',
+];
+
+$plugin_dir = '';
+foreach ($possible_paths as $path) {
+    if (is_dir($path)) {
+        $plugin_dir = $path;
+        break;
+    }
+}
+
+if (empty($plugin_dir)) {
+    die('<div style="background: #f44336; color: white; padding: 20px; margin: 20px; border-radius: 8px;">
+    <h2>❌ Plugin Directory Not Found</h2>
+    <p>Tried the following paths:</p>
+    <ul>' . implode('', array_map(function($p) { return '<li><code>' . $p . '</code></li>'; }, $possible_paths)) . '</ul>
+    <p><strong>Please ensure the KPI Dashboard plugin is installed.</strong></p>
+    </div>');
+}
 $all_checks_passed = true;
 $issues = [];
 $warnings = [];
@@ -201,6 +224,7 @@ $warnings = [];
     <div class="header">
         <h1>🔍 KPI Dashboard - Complete Validation</h1>
         <p><?php echo $_SERVER['HTTP_HOST']; ?> • <?php echo date('Y-m-d H:i:s'); ?></p>
+        <p style="font-size: 12px; opacity: 0.9;">Plugin Dir: <?php echo esc_html($plugin_dir); ?></p>
     </div>
 
     <div class="content">

@@ -155,7 +155,28 @@ if ($secret_key !== 'fix-kpi-2024') {
 // CONFIGURATION
 // ==========================================
 
-$plugin_dir = $_SERVER['DOCUMENT_ROOT'] . '/wp-content/plugins/kpi-dashboard/';
+// Try multiple possible plugin directory locations
+$possible_paths = [
+    $_SERVER['DOCUMENT_ROOT'] . '/wp-content/plugins/kpi-dashboard/',
+    __DIR__ . '/wp-content/plugins/kpi-dashboard/',
+    __DIR__ . '/../wp-content/plugins/kpi-dashboard/',
+];
+
+$plugin_dir = '';
+foreach ($possible_paths as $path) {
+    if (is_dir($path)) {
+        $plugin_dir = $path;
+        break;
+    }
+}
+
+if (empty($plugin_dir)) {
+    die('<div style="background: #f44336; color: white; padding: 30px; margin: 20px; border-radius: 8px;">
+    <h2>❌ Plugin Directory Not Found</h2>
+    <p>Tried: ' . implode(', ', $possible_paths) . '</p>
+    </div>');
+}
+
 $auto_fix = isset($_GET['fix']) && $_GET['fix'] === 'yes';
 $issues_found = [];
 $fixes_applied = [];

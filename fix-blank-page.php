@@ -13,7 +13,30 @@ if ($secret !== 'fix-blank-2024') {
 }
 
 $auto_fix = isset($_GET['fix']) && $_GET['fix'] === 'yes';
-$plugin_dir = $_SERVER['DOCUMENT_ROOT'] . '/wp-content/plugins/kpi-dashboard/';
+
+// Try multiple possible plugin directory locations
+$possible_paths = [
+    $_SERVER['DOCUMENT_ROOT'] . '/wp-content/plugins/kpi-dashboard/',
+    ABSPATH . 'wp-content/plugins/kpi-dashboard/',
+    dirname(__FILE__) . '/kpi-dashboard/',
+    dirname(__FILE__) . '/wp-content/plugins/kpi-dashboard/',
+];
+
+$plugin_dir = '';
+foreach ($possible_paths as $path) {
+    if (is_dir($path)) {
+        $plugin_dir = $path;
+        break;
+    }
+}
+
+if (empty($plugin_dir)) {
+    die('<div style="background: #dc3545; color: white; padding: 20px; margin: 20px; border-radius: 8px;">
+    <h2>❌ Plugin Directory Not Found</h2>
+    <p>Tried: ' . implode(', ', $possible_paths) . '</p>
+    </div>');
+}
+
 $issues = [];
 $fixes = [];
 
@@ -190,6 +213,7 @@ $fixes = [];
     <div class="header">
         <h1><span class="icon">🔍</span>Fix Blank Page - Advanced Diagnostic</h1>
         <p>Server: <?php echo $_SERVER['HTTP_HOST']; ?> | <?php echo date('Y-m-d H:i:s'); ?></p>
+        <p style="font-size: 12px; opacity: 0.8;">Plugin: <?php echo esc_html($plugin_dir); ?></p>
     </div>
     <div class="content">
 
