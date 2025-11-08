@@ -87,8 +87,8 @@ class KPI_Dashboard_Auth {
         // Prepare user data (remove sensitive info)
         $user_data = self::prepare_user_data($user);
 
+        // Return WITHOUT 'success' field to avoid double nesting when wrapped by API success()
         return [
-            'success' => true,
             'user' => $user_data,
             'access_token' => $access_token,
             'refresh_token' => $refresh_token,
@@ -147,8 +147,8 @@ class KPI_Dashboard_Auth {
         // Update session
         KPI_Dashboard_Session::update($session->id, $new_access_token, $new_refresh_token);
 
+        // Return WITHOUT 'success' field to avoid double nesting when wrapped by API success()
         return [
-            'success' => true,
             'access_token' => $new_access_token,
             'refresh_token' => $new_refresh_token,
             'expires_in' => 900,
