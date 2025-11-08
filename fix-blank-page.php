@@ -236,8 +236,8 @@ if (is_wp_error($response)) {
     echo '<tr><td>Has Content</td><td>' . ($body_length > 100 ? '✅ YES' : '❌ NO') . '</td></tr>';
     echo '</table>';
 
-    // Check for React root
-    $has_root = strpos($body, 'kpi-dashboard-root') !== false;
+    // Check for React root (looking for id="root")
+    $has_root = preg_match('/<div[^>]*id=["\']root["\'][^>]*>/i', $body);
     $has_script = strpos($body, 'main-Cn-9-PkT.js') !== false || strpos($body, 'main-') !== false;
 
     echo '<div class="info">';
@@ -247,14 +247,14 @@ if (is_wp_error($response)) {
     echo '</div>';
 
     if (!$has_root) {
-        $issues[] = "React root element (#kpi-dashboard-root) not found in HTML";
+        $issues[] = "React root element (#root) not found in HTML";
     }
     if (!$has_script) {
         $issues[] = "Main JavaScript file not loaded in HTML";
     }
 
     // Show relevant HTML snippet
-    if (preg_match('/<div[^>]*id=["\']kpi-dashboard-root["\'][^>]*>.*?<\/div>/s', $body, $matches)) {
+    if (preg_match('/<div[^>]*id=["\']root["\'][^>]*>.*?<\/div>/is', $body, $matches)) {
         echo '<div class="success">✅ React root element found:</div>';
         echo '<div class="code">' . htmlspecialchars($matches[0]) . '</div>';
     }
@@ -304,8 +304,8 @@ if (count($kpi_scripts) > 0) {
     }
     echo '</table>';
 } else {
-    $issues[] = "No KPI scripts enqueued";
-    echo '<div class="error">❌ No KPI scripts found in enqueue</div>';
+    echo '<div class="info">ℹ️ No scripts in wp_enqueue queue (expected - KPI Dashboard uses standalone routing)</div>';
+    echo '<p class="description">KPI Dashboard serves its own HTML with directly embedded scripts, not via WordPress enqueue system. This is normal.</p>';
 }
 
 echo '</div>';
@@ -717,7 +717,7 @@ echo '<h3>🎯 Most Likely Causes of Blank Page:</h3>';
 echo '<ol>';
 echo '<li><strong>JavaScript Error</strong> - Check browser console (F12)</li>';
 echo '<li><strong>API Authentication</strong> - Check if /wp-json/kpi/v1/auth/me returns 401</li>';
-echo '<li><strong>React Not Mounting</strong> - Check if #kpi-dashboard-root exists</li>';
+echo '<li><strong>React Not Mounting</strong> - Check if #root element exists</li>';
 echo '<li><strong>Cache Issue</strong> - Clear browser cache (Ctrl+Shift+Delete)</li>';
 echo '</ol>';
 echo '</div>';
