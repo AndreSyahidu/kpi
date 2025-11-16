@@ -66,13 +66,17 @@ class KPI_Dashboard_User_Model {
         $where_clause = implode(' AND ', $where);
         $orderby = sanitize_sql_orderby($args['orderby'] . ' ' . $args['order']);
 
+        // SECURITY: Always sanitize limit and offset as integers to prevent SQL injection
+        $limit = absint($args['limit']);
+        $offset = absint($args['offset']);
+
         if ($params) {
             $query = $wpdb->prepare(
                 "SELECT * FROM $table WHERE $where_clause ORDER BY $orderby LIMIT %d OFFSET %d",
-                array_merge($params, [$args['limit'], $args['offset']])
+                array_merge($params, [$limit, $offset])
             );
         } else {
-            $query = "SELECT * FROM $table WHERE $where_clause ORDER BY $orderby LIMIT {$args['limit']} OFFSET {$args['offset']}";
+            $query = "SELECT * FROM $table WHERE $where_clause ORDER BY $orderby LIMIT $limit OFFSET $offset";
         }
 
         return $wpdb->get_results($query);
@@ -246,13 +250,17 @@ class KPI_Dashboard_User_Model {
         global $wpdb;
         $table = $wpdb->prefix . 'kpi_users';
 
-        $query = $wpdb->prepare(
-            "SELECT * FROM $table WHERE department_id = %d",
-            $department_id
-        );
-
+        // SECURITY: Build complete query before prepare() to avoid post-prepare modification
         if ($active_only) {
-            $query .= " AND is_active = 1";
+            $query = $wpdb->prepare(
+                "SELECT * FROM $table WHERE department_id = %d AND is_active = 1",
+                $department_id
+            );
+        } else {
+            $query = $wpdb->prepare(
+                "SELECT * FROM $table WHERE department_id = %d",
+                $department_id
+            );
         }
 
         return $wpdb->get_results($query);
@@ -265,13 +273,17 @@ class KPI_Dashboard_User_Model {
         global $wpdb;
         $table = $wpdb->prefix . 'kpi_users';
 
-        $query = $wpdb->prepare(
-            "SELECT * FROM $table WHERE role = %s",
-            $role
-        );
-
+        // SECURITY: Build complete query before prepare() to avoid post-prepare modification
         if ($active_only) {
-            $query .= " AND is_active = 1";
+            $query = $wpdb->prepare(
+                "SELECT * FROM $table WHERE role = %s AND is_active = 1",
+                $role
+            );
+        } else {
+            $query = $wpdb->prepare(
+                "SELECT * FROM $table WHERE role = %s",
+                $role
+            );
         }
 
         return $wpdb->get_results($query);

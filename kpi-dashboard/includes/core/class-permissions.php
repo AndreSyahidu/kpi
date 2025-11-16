@@ -188,6 +188,32 @@ class KPI_Dashboard_Permissions {
     }
 
     /**
+     * Check if user can view data entry
+     */
+    public static function can_view_data($user, $data) {
+        if (!$user || !$data) {
+            return false;
+        }
+
+        // Super admin can view all
+        if ($user->role === 'super_admin') {
+            return true;
+        }
+
+        // Dept head can view data from their departments
+        if ($user->role === 'dept_head') {
+            return self::can_access_department($user, $data->department_id);
+        }
+
+        // Manager and staff can view data from their department
+        if (in_array($user->role, ['manager', 'staff'])) {
+            return $user->department_id == $data->department_id;
+        }
+
+        return false;
+    }
+
+    /**
      * Check if user can edit data
      */
     public static function can_edit_data($user, $data) {
@@ -243,8 +269,37 @@ class KPI_Dashboard_Permissions {
             return $query . " AND 1=0";
         }
 
-        $ids = implode(',', $accessible);
+        // Sanitize IDs to prevent SQL injection
+        $ids = array_map('intval', $accessible);
+        $ids = implode(',', $ids);
         return $query . " AND id IN ($ids)";
+    }
+
+    /**
+     * Check if user can view another user's profile
+     */
+    public static function can_view_user($user, $target_user) {
+        if (!$user || !$target_user) {
+            return false;
+        }
+
+        // Can always view own profile
+        if ($user->id == $target_user->id) {
+            return true;
+        }
+
+        // Super admin can view all users
+        if ($user->role === 'super_admin') {
+            return true;
+        }
+
+        // Dept head and manager can view users in their departments
+        if (in_array($user->role, ['dept_head', 'manager'])) {
+            return self::can_access_department($user, $target_user->department_id);
+        }
+
+        // Staff can only view their own profile
+        return false;
     }
 
     /**
@@ -265,6 +320,57 @@ class KPI_Dashboard_Permissions {
         }
 
         return false;
+    }
+
+    /**
+     * Check if user can view KPI
+     */
+    public static function can_view_kpi($user, $kpi) {
+        if (!$user || !$kpi) {
+            return false;
+        }
+
+        // Super admin can view all KPIs
+        if ($user->role === 'super_admin') {
+            return true;
+        }
+
+        // Dept head can view KPIs from their departments
+        if ($user->role === 'dept_head' && isset($kpi->department_id)) {
+            return self::can_access_department($user, $kpi->department_id);
+        }
+
+        // Manager and staff can view KPIs from their department or assigned to them
+        if (in_array($user->role, ['manager', 'staff'])) {
+            // Check if KPI is from their department
+            if (isset($kpi->department_id) && $user->department_id == $kpi->department_id) {
+                return true;
+            }
+            // KPIs without department restriction are viewable by all
+            if (!isset($kpi->department_id) || empty($kpi->department_id)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user can view department
+     */
+    public static function can_view_department($user, $department) {
+        if (!$user || !$department) {
+            return false;
+        }
+
+        // Super admin can view all departments
+        if ($user->role === 'super_admin') {
+            return true;
+        }
+
+        // All authenticated users can view basic department info
+        // But sensitive stats should be filtered separately
+        return true;
     }
 
     /**

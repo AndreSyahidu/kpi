@@ -34,6 +34,9 @@ class KPI_Dashboard_Activator {
             // Create database tables
             self::create_database_tables();
 
+            // Add performance optimization indexes
+            KPI_Dashboard_DB_Indexes::add_optimization_indexes();
+
             // Create upload directories
             self::create_upload_directories();
 

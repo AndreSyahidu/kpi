@@ -22,8 +22,18 @@ class KPI_Dashboard_KPIs_API extends KPI_Dashboard_API_Base {
     }
 
     public function get_item($request) {
+        $current_user = $this->get_current_user($request);
         $kpi = KPI_Dashboard_KPI_Service::get_with_assignments($request->get_param('id'));
-        if (!$kpi) return $this->error(__('KPI not found', 'kpi-dashboard'), 'not_found', 404);
+
+        if (!$kpi) {
+            return $this->error(__('KPI not found', 'kpi-dashboard'), 'not_found', 404);
+        }
+
+        // SECURITY: Check if current user has permission to view this KPI
+        if (!KPI_Dashboard_Permissions::can_view_kpi($current_user, $kpi)) {
+            return $this->error(__('You do not have permission to view this KPI', 'kpi-dashboard'), 'forbidden', 403);
+        }
+
         return $this->success($kpi);
     }
 

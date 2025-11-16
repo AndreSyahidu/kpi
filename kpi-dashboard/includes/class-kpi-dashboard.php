@@ -45,6 +45,7 @@ class KPI_Dashboard {
 
         // Database
         require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/database/class-db-schema.php';
+        require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/database/class-db-indexes.php';
 
         // Models
         require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/models/class-user.php';
@@ -82,6 +83,7 @@ class KPI_Dashboard {
         require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/api/class-settings-api.php';
 
         // Utils
+        require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/utils/class-rate-limiter.php';
         require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/utils/class-validator.php';
         require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/utils/class-sanitizer.php';
         require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/utils/class-logger.php';

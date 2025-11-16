@@ -28,8 +28,18 @@ class KPI_Dashboard_Data_API extends KPI_Dashboard_API_Base {
     }
 
     public function get_item($request) {
+        $current_user = $this->get_current_user($request);
         $entry = KPI_Dashboard_KPI_Data_Model::get($request->get_param('id'));
-        if (!$entry) return $this->error(__('Entry not found', 'kpi-dashboard'), 'not_found', 404);
+
+        if (!$entry) {
+            return $this->error(__('Entry not found', 'kpi-dashboard'), 'not_found', 404);
+        }
+
+        // SECURITY: Check if current user has permission to view this data entry
+        if (!KPI_Dashboard_Permissions::can_view_data($current_user, $entry)) {
+            return $this->error(__('You do not have permission to view this data entry', 'kpi-dashboard'), 'forbidden', 403);
+        }
+
         return $this->success($entry);
     }
 

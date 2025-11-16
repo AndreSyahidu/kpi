@@ -61,11 +61,17 @@ class KPI_Dashboard_Users_API extends KPI_Dashboard_API_Base {
     }
 
     public function get_item($request) {
+        $current_user = $this->get_current_user($request);
         $user_id = $request->get_param('id');
         $user = KPI_Dashboard_User_Service::get_with_relations($user_id);
 
         if (!$user) {
             return $this->error(__('User not found', 'kpi-dashboard'), 'not_found', 404);
+        }
+
+        // SECURITY: Check if current user has permission to view this user
+        if (!KPI_Dashboard_Permissions::can_view_user($current_user, $user)) {
+            return $this->error(__('You do not have permission to view this user', 'kpi-dashboard'), 'forbidden', 403);
         }
 
         $user = KPI_Dashboard_User_Model::sanitize_for_response($user);

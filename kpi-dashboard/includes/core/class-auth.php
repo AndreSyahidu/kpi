@@ -38,6 +38,21 @@ class KPI_Dashboard_Auth {
     public static function authenticate($username, $password) {
         global $wpdb;
 
+        // SECURITY: Check rate limit BEFORE any database queries to prevent timing attacks
+        $rate_limit = KPI_Dashboard_Rate_Limiter::check_combined('login', $username, 5, 900); // 5 attempts per 15 minutes
+
+        if (!$rate_limit['allowed']) {
+            $minutes = ceil($rate_limit['retry_after'] / 60);
+            return new WP_Error(
+                'too_many_attempts',
+                sprintf(
+                    __('Too many login attempts. Please try again in %d minutes.', 'kpi-dashboard'),
+                    $minutes
+                ),
+                ['retry_after' => $rate_limit['retry_after']]
+            );
+        }
+
         $table = $wpdb->prefix . 'kpi_users';
 
         // Find user by username or email
@@ -50,11 +65,6 @@ class KPI_Dashboard_Auth {
         if (!$user) {
             self::log_failed_attempt($username);
             return new WP_Error('invalid_credentials', __('Invalid username or password', 'kpi-dashboard'));
-        }
-
-        // Check if account is locked due to too many failed attempts
-        if (self::is_account_locked($username)) {
-            return new WP_Error('account_locked', __('Account is temporarily locked due to too many failed login attempts. Please try again later.', 'kpi-dashboard'));
         }
 
         // Verify password
@@ -342,30 +352,25 @@ class KPI_Dashboard_Auth {
      * Log failed login attempt
      */
     private static function log_failed_attempt($username) {
-        $attempts = get_transient('kpi_failed_login_' . md5($username)) ?: 0;
-        $attempts++;
-        set_transient('kpi_failed_login_' . md5($username), $attempts, 15 * MINUTE_IN_SECONDS);
+        // Record attempt using the new rate limiter
+        KPI_Dashboard_Rate_Limiter::record_combined('login', $username);
+
+        // Get current attempt count for audit log
+        $rate_limit = KPI_Dashboard_Rate_Limiter::check_combined('login', $username, 5, 900);
 
         // Log to audit
         KPI_Dashboard_Audit_Log::log('login_failed', 'user', null, null, [
             'username' => $username,
-            'attempts' => $attempts,
+            'attempts' => $rate_limit['count'],
+            'ip' => KPI_Dashboard_Rate_Limiter::get_client_ip(),
         ]);
     }
 
     /**
-     * Check if account is locked
-     */
-    private static function is_account_locked($username) {
-        $attempts = get_transient('kpi_failed_login_' . md5($username)) ?: 0;
-        return $attempts >= 5; // Lock after 5 failed attempts
-    }
-
-    /**
-     * Clear failed login attempts
+     * Clear failed login attempts (called after successful login)
      */
     private static function clear_failed_attempts($username) {
-        delete_transient('kpi_failed_login_' . md5($username));
+        KPI_Dashboard_Rate_Limiter::clear_combined('login', $username);
     }
 
     /**
