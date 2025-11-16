@@ -83,6 +83,7 @@ class KPI_Dashboard {
         require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/api/class-settings-api.php';
 
         // Utils
+        require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/utils/class-constants.php';
         require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/utils/class-rate-limiter.php';
         require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/utils/class-validator.php';
         require_once KPI_DASHBOARD_PLUGIN_DIR . 'includes/utils/class-sanitizer.php';
